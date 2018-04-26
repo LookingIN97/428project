@@ -57,38 +57,38 @@ include CMakeFiles/my.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/my.dir/flags.make
 
-CMakeFiles/my.dir/main.cpp.o: CMakeFiles/my.dir/flags.make
-CMakeFiles/my.dir/main.cpp.o: ../main.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/lookingin/Desktop/dskcf/my/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/my.dir/main.cpp.o"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/my.dir/main.cpp.o -c /Users/lookingin/Desktop/dskcf/my/main.cpp
+CMakeFiles/my.dir/src/main.cpp.o: CMakeFiles/my.dir/flags.make
+CMakeFiles/my.dir/src/main.cpp.o: ../src/main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/lookingin/Desktop/dskcf/my/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/my.dir/src/main.cpp.o"
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/my.dir/src/main.cpp.o -c /Users/lookingin/Desktop/dskcf/my/src/main.cpp
 
-CMakeFiles/my.dir/main.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/my.dir/main.cpp.i"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/lookingin/Desktop/dskcf/my/main.cpp > CMakeFiles/my.dir/main.cpp.i
+CMakeFiles/my.dir/src/main.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/my.dir/src/main.cpp.i"
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/lookingin/Desktop/dskcf/my/src/main.cpp > CMakeFiles/my.dir/src/main.cpp.i
 
-CMakeFiles/my.dir/main.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/my.dir/main.cpp.s"
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/lookingin/Desktop/dskcf/my/main.cpp -o CMakeFiles/my.dir/main.cpp.s
+CMakeFiles/my.dir/src/main.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/my.dir/src/main.cpp.s"
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/lookingin/Desktop/dskcf/my/src/main.cpp -o CMakeFiles/my.dir/src/main.cpp.s
 
-CMakeFiles/my.dir/main.cpp.o.requires:
+CMakeFiles/my.dir/src/main.cpp.o.requires:
 
-.PHONY : CMakeFiles/my.dir/main.cpp.o.requires
+.PHONY : CMakeFiles/my.dir/src/main.cpp.o.requires
 
-CMakeFiles/my.dir/main.cpp.o.provides: CMakeFiles/my.dir/main.cpp.o.requires
-	$(MAKE) -f CMakeFiles/my.dir/build.make CMakeFiles/my.dir/main.cpp.o.provides.build
-.PHONY : CMakeFiles/my.dir/main.cpp.o.provides
+CMakeFiles/my.dir/src/main.cpp.o.provides: CMakeFiles/my.dir/src/main.cpp.o.requires
+	$(MAKE) -f CMakeFiles/my.dir/build.make CMakeFiles/my.dir/src/main.cpp.o.provides.build
+.PHONY : CMakeFiles/my.dir/src/main.cpp.o.provides
 
-CMakeFiles/my.dir/main.cpp.o.provides.build: CMakeFiles/my.dir/main.cpp.o
+CMakeFiles/my.dir/src/main.cpp.o.provides.build: CMakeFiles/my.dir/src/main.cpp.o
 
 
 # Object files for target my
 my_OBJECTS = \
-"CMakeFiles/my.dir/main.cpp.o"
+"CMakeFiles/my.dir/src/main.cpp.o"
 
 # External object files for target my
 my_EXTERNAL_OBJECTS =
 
-my: CMakeFiles/my.dir/main.cpp.o
+my: CMakeFiles/my.dir/src/main.cpp.o
 my: CMakeFiles/my.dir/build.make
 my: CMakeFiles/my.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/lookingin/Desktop/dskcf/my/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable my"
@@ -99,7 +99,7 @@ CMakeFiles/my.dir/build: my
 
 .PHONY : CMakeFiles/my.dir/build
 
-CMakeFiles/my.dir/requires: CMakeFiles/my.dir/main.cpp.o.requires
+CMakeFiles/my.dir/requires: CMakeFiles/my.dir/src/main.cpp.o.requires
 
 .PHONY : CMakeFiles/my.dir/requires
 

@@ -82,7 +82,7 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/Users/lookingin/Desktop/dskcf/my/main.cpp">
+		<Unit filename="/Users/lookingin/Desktop/dskcf/my/src/main.cpp">
 			<Option target="my"/>
 		</Unit>
 		<Unit filename="/Users/lookingin/Desktop/dskcf/my/CMakeLists.txt">
