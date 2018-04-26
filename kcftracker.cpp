@@ -79,7 +79,9 @@ and on any theory of liability, whether in contract, strict liability,
 or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
  */
-
+#include <iostream>
+#include <vector>
+#include <fstream>
 #ifndef _KCFTRACKER_HEADERS
 #include "kcftracker.hpp"
 #include "ffttools.hpp"
@@ -88,10 +90,13 @@ the use of this software, even if advised of the possibility of such damage.
 #include "labdata.hpp"
 #endif
 
+using namespace std;
+
 // Constructor
 KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
 {
 
+    occlusion = false;
     // Parameters equal in all cases
     lambda = 0.0001;
     padding = 2.5; 
@@ -158,34 +163,89 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
 }
 
 // Initialize tracker 
-void KCFTracker::init(const cv::Rect &roi, cv::Mat image)
+void KCFTracker::init(const cv::Rect &roi, cv::Mat rgbimage, cv::Mat depthimage)
 {
     _roi = roi;
     assert(roi.width >= 0 && roi.height >= 0);
-    _tmpl = getFeatures(image, 1);
+    _tmpl = getFeatures(rgbimage, 1);
     _prob = createGaussianPeak(size_patch[0], size_patch[1]);
     _alphaf = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     //_num = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     //_den = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     train(_tmpl, 1.0); // train with initial frame
+
+    curr_depth = getDepth(_roi, depthimage);
+    t0_depth = curr_depth;
+    //std::cout << " t0_depth " << curr_depth << std::endl;
  }
+
 // Update position based on the new frame
-cv::Rect KCFTracker::update(cv::Mat image)
+cv::Rect KCFTracker::update(cv::Mat image, cv::Mat depthimage)
 {
+
     if (_roi.x + _roi.width <= 0) _roi.x = -_roi.width + 1;
     if (_roi.y + _roi.height <= 0) _roi.y = -_roi.height + 1;
     if (_roi.x >= image.cols - 1) _roi.x = image.cols - 2;
     if (_roi.y >= image.rows - 1) _roi.y = image.rows - 2;
 
+    prev_depth = curr_depth;
+    curr_depth = getDepth(_roi, depthimage);
+    float d_value = curr_depth - prev_depth;
+    if(d_value < 0)
+        d_value = -d_value;
+    //std::cout << curr_depth << std::endl;
+
     float cx = _roi.x + _roi.width / 2.0f;
     float cy = _roi.y + _roi.height / 2.0f;
-
 
     float peak_value;
     cv::Point2f res = detect(_tmpl, getFeatures(image, 0, 1.0f), peak_value);
 
-    if (scale_step != 1) {
-        // Test at a smaller _scale
+    std::cout << "reponse : " << peak_value << "  |  d_value : " << d_value << std::endl;
+
+    if( d_value > 0.12 && peak_value < 0.4)
+    {
+            occlusion = true;
+            t0_depth = prev_depth;
+            std::cout << " -------------------------------  occlusion  -------------------------- " << std::endl;
+            return _roi;
+    }
+
+    if( occlusion )
+    {
+        if(curr_depth - t0_depth < 0.12 && peak_value > 0.4)
+        {
+            occlusion = false;
+            std::cout << " **************************  NO ************* occlusion  ************************ " << std::endl;
+
+
+        }
+        else
+            return _roi;
+    }
+
+
+    float scale_depth;
+    if (scale_step != 1) 
+    {
+        // Test use depth data
+        scale_depth = prev_depth / curr_depth;
+        if(scale_depth > 0)
+        {
+            float new_peak_value;
+            cv::Point2f new_res = detect(_tmpl, getFeatures(image, 0, scale_depth), new_peak_value);
+
+            if (new_peak_value > peak_value) {
+                res = new_res;
+                peak_value = new_peak_value;
+                _scale *= scale_depth;
+                _roi.width *= scale_depth;
+                _roi.height *= scale_depth;
+                //std::cout << " ------------------------scale_depth used : " << scale_depth << std::endl;
+            }
+        }
+
+        // // Test at a smaller _scale
         float new_peak_value;
         cv::Point2f new_res = detect(_tmpl, getFeatures(image, 0, 1.0f / scale_step), new_peak_value);
 
@@ -195,6 +255,7 @@ cv::Rect KCFTracker::update(cv::Mat image)
             _scale /= scale_step;
             _roi.width /= scale_step;
             _roi.height /= scale_step;
+            //std::cout << " scale_step smaller used : " << scale_step << std::endl;
         }
 
         // Test at a bigger _scale
@@ -206,6 +267,7 @@ cv::Rect KCFTracker::update(cv::Mat image)
             _scale *= scale_step;
             _roi.width *= scale_step;
             _roi.height *= scale_step;
+            //std::cout << " scale_step bigger used : " << scale_step << std::endl;
         }
     }
 
@@ -219,8 +281,12 @@ cv::Rect KCFTracker::update(cv::Mat image)
     if (_roi.y + _roi.height <= 0) _roi.y = -_roi.height + 2;
 
     assert(_roi.width >= 0 && _roi.height >= 0);
-    cv::Mat x = getFeatures(image, 0);
-    train(x, interp_factor);
+
+    if(!occlusion)
+    {
+        cv::Mat x = getFeatures(image, 0);
+        train(x, interp_factor);
+    }
 
     return _roi;
 }
@@ -517,3 +583,198 @@ float KCFTracker::subPixelPeak(float left, float center, float right)
     
     return 0.5 * (right - left) / divisor;
 }
+
+float KCFTracker::getDepth(cv::Rect roi, cv::Mat depthimage)
+{
+    ofstream fout("result.txt");
+
+    //initialise vectors
+    float minDist = 0.0;
+    float maxDist = 10.0;
+    float interval = 0.05;
+    vector<vector<float>> result; 
+
+    for(int i = 0; i < (maxDist - minDist) / interval; i++)
+    {
+        vector<float> v;
+        result.push_back(v);
+    }
+
+    int count[result.size()];
+
+    //calculate depth distribution
+    int row_degin; //= roi_y + roi.height / 3;
+    int col_begin; //= roi_x + roi.width / 3;
+    int row_end; //= roi_y + 2 * roi.height / 3;
+    int col_end; //= roi_x + 2 * roi.width / 3;
+
+    if(roi.y <= 0)
+        row_degin = 0;
+    else if(roi.y >= (depthimage.rows - 10))
+        return 0;
+    else 
+        row_degin = roi.y;
+
+    if(roi.y + roi.height <= 0)
+        return 0;
+    else if(roi.y + roi.height >= depthimage.rows)
+        row_end = depthimage.rows;
+    else 
+        row_end = roi.y + roi.height;
+
+    if(roi.x <= 0)
+        col_begin = 0;
+    else if(roi.x >= depthimage.cols)
+        return 0;
+    else 
+        col_begin = roi.x;
+
+    if(roi.x + roi.width <= 0)
+        return 0;
+    else if(roi.x + roi.width >= depthimage.cols)
+        col_end = depthimage.cols;
+    else 
+        col_end = roi.x + roi.width;
+
+    // cout << "row_degin " << row_degin << endl; 
+    // cout << "row_end " << row_end << endl; 
+    // cout << "col_begin " << col_begin << endl; 
+    // cout << "col_end " << col_end << endl; 
+    // cout << "-------------------------------" << endl;
+
+
+    for(int row = row_degin; row < row_end; row++)
+    {
+        for(int col = col_begin; col < col_end; col++)
+        {
+            if(depthimage.at<ushort>(row, col) > 0)
+            {
+                float depth = depthimage.at<ushort>(row, col) / 1000.0;
+                int inter = int(depth / interval); 
+                result.at(inter).push_back(depth);
+            }
+        }
+    }
+
+
+    int maxSize = 0;
+    int index = 0;
+    if(fout.is_open())
+    {
+        for(int i = 0; i < result.size(); i++)
+        {
+            fout << "vector " << i << " size "<< " " << result.at(i).size() << endl;
+            if(result.at(i).size() > maxSize)
+            {
+                maxSize = result.at(i).size();
+                index = i;
+            }
+
+            if(i < 2)
+            {
+                count[i] = result.at(i).size() + result.at(i+1).size() + result.at(i+2).size();
+            }
+            else if(i >= 2 && i < result.size() - 2)
+            {
+                count[i] = result.at(i-2).size() + result.at(i-1).size() + result.at(i).size() + 
+                result.at(i+1).size() + result.at(i+2).size();
+            }
+            else
+            {
+                count[i] = result.at(i-2).size() + result.at(i-1).size() + result.at(i).size();
+            }
+            fout << "count " << i << " " << count[i] << endl << endl;
+        }
+        fout << "index : " << index  << "  maxSize : " << maxSize << endl;
+    }
+
+    int maxCount = 0;
+    int indexCount = 0;
+    for(int i = 0; i < result.size(); i++)
+    {
+        if(count[i] > maxCount)
+        {
+            maxCount = count[i];
+            indexCount = i;
+        }
+        fout << "count " << i << " : " << count[i] << endl;
+    }
+    
+    fout << "indexCount " << indexCount <<" maxCount : " << maxCount << endl;
+                           
+
+    //calcule mean depth of the vector
+    float distance = 0;
+    // for(int i = 0; i < result.at(indexCount).size(); i++)
+    // {
+    //     distance += result.at(indexCount).at(i);
+    // }
+    // distance /= result.at(indexCount).size();
+    if(indexCount < 2)
+    {
+        for(int i = indexCount; i <= indexCount + 2; i++)
+        {
+            for(int j = 0 ; j < result.at(i).size(); j++)
+                distance += result.at(i).at(j);
+        } 
+        distance /= count[indexCount];
+    }
+    else if(indexCount >= 2 && indexCount < result.size() - 2)
+    {
+        for(int i = indexCount - 2; i <= indexCount + 2; i++)
+        {
+            for(int j = 0 ; j < result.at(i).size(); j++)
+                distance += result.at(i).at(j);
+        } 
+        distance /= count[indexCount];
+    }
+    else
+    {
+        for(int i = indexCount - 2; i <= indexCount; i++)
+        {
+            for(int j = 0 ; j < result.at(i).size(); j++)
+                distance += result.at(i).at(j);
+        } 
+        distance /= count[indexCount];
+    }
+    
+
+    fout.close();
+    // cout << " distance " << distance << endl;
+
+
+    // float dist_val[5] ;
+    // dist_val[0] = depthimage.at<ushort>(roi.y+roi.height/3, roi.x+roi.width/3);
+    // dist_val[1] = depthimage.at<ushort>(roi.y+roi.height/3, roi.x+2*roi.width/3);
+    // dist_val[2] = depthimage.at<ushort>(roi.y+2*roi.height/3, roi.x+roi.width/3) ;
+    // dist_val[3] = depthimage.at<ushort>(roi.y+2*roi.height/3, roi.x+2*roi.width/3) ;
+    // dist_val[4] = depthimage.at<ushort>(roi.y+roi.height/2, roi.x+roi.width/2) ;
+
+    // cout << " ***************** " << endl;
+    // cout << " distance1 " << dist_val[0] << endl;
+    // cout << " distance2 " << dist_val[1] << endl;
+    // cout << " distance3 " << dist_val[2] << endl;
+    // cout << " distance4 " << dist_val[3] << endl;
+    // cout << " distance5 " << dist_val[4] << endl;
+    // cout << " ***************** " << endl;
+
+    // for(int i = 0; i < 5; i++)
+    //     dist_val[i] = dist_val[i] / 1000.0;
+
+    // float distance = 0;
+    // int num_depth_points = 5;
+    // for(int i = 0; i < 5; i++)
+    // {
+    //     if(dist_val[i] > 0.4)
+    //         distance += dist_val[i];
+    //     else
+    //         num_depth_points--;
+    // }
+    // distance /= num_depth_points;
+
+    // cout << " distance " << distance << endl;
+
+    return distance;
+}
+
+

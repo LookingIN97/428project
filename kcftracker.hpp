@@ -95,10 +95,13 @@ public:
     KCFTracker(bool hog = true, bool fixed_window = true, bool multiscale = true, bool lab = true);
 
     // Initialize tracker 
-    virtual void init(const cv::Rect &roi, cv::Mat image);
+    virtual void init(const cv::Rect &roi, cv::Mat rgbimage, cv::Mat depthimage);
     
     // Update position based on the new frame
-    virtual cv::Rect update(cv::Mat image);
+    virtual cv::Rect update(cv::Mat rgbimage, cv::Mat depthimage);
+
+    // Calculate depth of roi
+    float getDepth(cv::Rect roi, cv::Mat depthimage);
 
     float interp_factor; // linear interpolation factor for adaptation
     float sigma; // gaussian kernel bandwidth
@@ -110,6 +113,11 @@ public:
     int template_size; // template size
     float scale_step; // scale step for multi-scale estimation
     float scale_weight;  // to downweight detection scores of other scales for added stability
+    
+    float t0_depth; 
+    float prev_depth;  
+    float curr_depth;
+    bool occlusion;
 
 protected:
     // Detect object in the current frame.
@@ -133,6 +141,8 @@ protected:
     // Calculate sub-pixel peak for one dimension
     float subPixelPeak(float left, float center, float right);
 
+    
+
     cv::Mat _alphaf;
     cv::Mat _prob;
     cv::Mat _tmpl;
@@ -148,4 +158,5 @@ private:
     int _gaussian_size;
     bool _hogfeatures;
     bool _labfeatures;
+
 };
