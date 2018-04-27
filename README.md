@@ -22,6 +22,7 @@ cd bin
 
 The structure of a dataset is assumed to be
 
+.
 +-- init.text (initial bounding box)
 +-- rgb
 |   +-- 1.png
