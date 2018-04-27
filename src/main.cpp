@@ -183,10 +183,15 @@ void hMirrorTrans(const Mat &src, Mat &dst)
 
 }
 
-int main(string file_path)
+int main(int argc, char** argv)
 {
+    string file_path = argv[1];
     string depth_path = file_path + "/depth";
     string color_path = file_path + "/rgb";
+    cv::String path(color_path);
+    vector<cv::String> fn;
+    vector<cv::Mat> data;
+    cv::glob(path + "/*.png",fn,true); // recurse
 //    Status rc = STATUS_OK;
 //
 //    // 初始化OpenNI环境
@@ -282,13 +287,18 @@ int main(string file_path)
 
     //openPort();
 
-    while (true)
+//    while (true)
+    Mat image;
+    ostringstream convert;
+    for (size_t k=0; k<fn.size(); ++k)
     {
+        convert << k+1;
         // read color image
-        Mat image;
-        image = imread(argv[1], CV_LOAD_IMAGE_COLOR);   // Read the file
+        string color_image_path = color_path + "/" + convert.str() + ".png";
+        rgbimage = imread(color_image_path, CV_LOAD_IMAGE_COLOR);   // Read the file
         // read depth image
-
+        string depth_image_path = depth_path + "/" + convert.str() + ".png";
+        depthimage = imread(depth_image_path, CV_LOAD_IMAGE_COLOR);
 
 //        // 读取数据流
 //        rc = streamDepth.readFrame(&frameDepth);
