@@ -174,9 +174,7 @@ void KCFTracker::init(const cv::Rect &roi, cv::Mat rgbimage, cv::Mat depthimage)
     _alphaf = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     //_num = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     //_den = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
-//    cout << "good here" << endl;
     train(_tmpl, 1.0); // train with initial frame
-//    cout << "good here" << endl;
     // local max
     double min, max;
     cv::Point min_loc, max_loc;
