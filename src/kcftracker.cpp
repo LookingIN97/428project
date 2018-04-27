@@ -102,6 +102,7 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
     padding = 2.5; 
     //output_sigma_factor = 0.1;
     output_sigma_factor = 0.125;
+    depth_max = 60.0;
 
 
     if (hog) {    // HOG
@@ -165,6 +166,7 @@ KCFTracker::KCFTracker(bool hog, bool fixed_window, bool multiscale, bool lab)
 // Initialize tracker 
 void KCFTracker::init(const cv::Rect &roi, cv::Mat rgbimage, cv::Mat depthimage)
 {
+//    cout << "lalala" << endl;
     _roi = roi;
     assert(roi.width >= 0 && roi.height >= 0);
     _tmpl = getFeatures(rgbimage, 1);
@@ -172,11 +174,23 @@ void KCFTracker::init(const cv::Rect &roi, cv::Mat rgbimage, cv::Mat depthimage)
     _alphaf = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     //_num = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
     //_den = cv::Mat(size_patch[0], size_patch[1], CV_32FC2, float(0));
+//    cout << "good here" << endl;
     train(_tmpl, 1.0); // train with initial frame
+//    cout << "good here" << endl;
+    // local max
+    double min, max;
+    cv::Point min_loc, max_loc;
+    cv::minMaxLoc(depthimage, &min, &max, &min_loc, &max_loc);
+    max = max / 1000.0;
+    int num_of_tens = (int) max / 10;
+    depth_max = (num_of_tens + 2) * 10.0;
+    cout << "depth max : " << depth_max << endl;
 
     curr_depth = getDepth(_roi, depthimage);
+//    cout << "good here" << endl;
     t0_depth = curr_depth;
-    //std::cout << " t0_depth " << curr_depth << std::endl;
+//    cout << "good here" << endl;
+//    std::cout << " t0_depth " << curr_depth << std::endl;
  }
 
 // Update position based on the new frame
@@ -590,8 +604,10 @@ float KCFTracker::getDepth(cv::Rect roi, cv::Mat depthimage)
 
     //initialise vectors
     float minDist = 0.0;
-    float maxDist = 10.0;
-    float interval = 0.05;
+    float maxDist = depth_max;
+//    float maxDist = (num_of_tens + 1) * 10.0;
+//    cout << "max dist: " << maxDist<< endl;
+    float interval = 0.1;
     vector<vector<float>> result; 
 
     for(int i = 0; i < (maxDist - minDist) / interval; i++)
@@ -636,11 +652,11 @@ float KCFTracker::getDepth(cv::Rect roi, cv::Mat depthimage)
     else 
         col_end = roi.x + roi.width;
 
-    // cout << "row_degin " << row_degin << endl; 
-    // cout << "row_end " << row_end << endl; 
-    // cout << "col_begin " << col_begin << endl; 
-    // cout << "col_end " << col_end << endl; 
-    // cout << "-------------------------------" << endl;
+//     cout << "row_degin " << row_degin << endl;
+//     cout << "row_end " << row_end << endl;
+//     cout << "col_begin " << col_begin << endl;
+//     cout << "col_end " << col_end << endl;
+//     cout << "-------------------------------" << endl;
 
 
     for(int row = row_degin; row < row_end; row++)
@@ -649,12 +665,18 @@ float KCFTracker::getDepth(cv::Rect roi, cv::Mat depthimage)
         {
             if(depthimage.at<ushort>(row, col) > 0)
             {
+//                cout << "good here" << endl;
                 float depth = depthimage.at<ushort>(row, col) / 1000.0;
-                int inter = int(depth / interval); 
+//                cout << "good here" << "\t" << depth << "\t" << depthimage.at<double>(row, col) << "\t" << depthimage.at<double>(row, col) / 1000 << endl;
+//                cout << depth << "\t" << depth_max << endl;
+                int inter = int(depth / interval);
+//                return -1;
+//                cout << inter << endl;
                 result.at(inter).push_back(depth);
             }
         }
     }
+//    cout << "good here" << endl;
 
 
     int maxSize = 0;

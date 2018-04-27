@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -15,9 +16,9 @@
 //boost::asio::io_service iosev;
 //boost::asio::serial_port sp(iosev);
 
-unsigned char startByte = 0xff;
-unsigned char endByte = 0xfe;
-std::string Base_Port = "/dev/ttyUSB0";
+//unsigned char startByte = 0xff;
+//unsigned char endByte = 0xfe;
+//std::string Base_Port = "/dev/ttyUSB0";
 
 using namespace std;
 //using namespace openni;
@@ -78,71 +79,35 @@ union Max_Value {
 } Send_Data;
 
 
-//void openPort()
+//void onMouse(int event, int x, int y, int, void*)
 //{
-//    sp.open(Base_Port);
-//    sp.set_option(boost::asio::serial_port::baud_rate(9600));
-//    sp.set_option(boost::asio::serial_port::flow_control(boost::asio::serial_port::flow_control::none));
-//    sp.set_option(boost::asio::serial_port::parity(boost::asio::serial_port::parity::none));
-//    sp.set_option(boost::asio::serial_port::stop_bits(boost::asio::serial_port::stop_bits::one));
-//    sp.set_option(boost::asio::serial_port::character_size(8));
-//}
-
-///**
-// * send the velocity to the lower machine
-// * @param vTranslation [the translation velocity]    max <= 0.8
-// * @param vRotation    [the rotation velocity]       max <= 1.0
-// */
-//void sendVelocity(float vTranslation, float vRotation)
-//{
-//    Send_Data.Double_RAM._double_vT = vTranslation;
-//    Send_Data.Double_RAM._double_vR = vRotation;
-//    write(sp, boost::asio::buffer(&startByte, 1));
-//    write(sp, boost::asio::buffer(Send_Data.buf, 8));
-//    write(sp, boost::asio::buffer(&endByte, 1));
-//}
-
-void onMouse(int event, int x, int y, int, void*)
-{
-    if (select_flag)
-    {
-        selectRect.x = MIN(origin.x, x);        
-        selectRect.y = MIN(origin.y, y);
-        selectRect.width = abs(x - origin.x);   
-        selectRect.height = abs(y - origin.y);
-        selectRect &= cv::Rect(0, 0, rgbimage.cols, rgbimage.rows);
-    }
-    if (event == CV_EVENT_LBUTTONDOWN)
-    {
-        bBeginKCF = false;  
-        select_flag = true; 
-        origin = cv::Point(x, y);       
-        selectRect = cv::Rect(x, y, 0, 0);  
-    }
-    else if (event == CV_EVENT_LBUTTONUP)
-    {
-        select_flag = false;
-        bRenewROI = true;
-    }
-}
-
-
-//void showdevice(){
-//    // 获取设备信息
-//    Array<DeviceInfo> aDeviceList;
-//    OpenNI::enumerateDevices(&aDeviceList);
-//
-//    cout << "电脑上连接着 " << aDeviceList.getSize() << " 个体感设备." << endl;
-//
-//    for (int i = 0; i < aDeviceList.getSize(); ++i)
+//    if (select_flag)
 //    {
-//        cout << "设备 " << i << endl;
-//        const DeviceInfo& rDevInfo = aDeviceList[i];
-//        cout << "设备名： " << rDevInfo.getName() << endl;
-//        cout << "设备Id： " << rDevInfo.getUsbProductId() << endl;
-//        cout << "供应商名： " << rDevInfo.getVendor() << endl;
-//        cout << "供应商Id: " << rDevInfo.getUsbVendorId() << endl;
-//        cout << "设备URI: " << rDevInfo.getUri() << endl;
+//        selectRect.x = MIN(origin.x, x);
+//        selectRect.y = MIN(origin.y, y);
+//        selectRect.width = abs(x - origin.x);
+//        selectRect.height = abs(y - origin.y);
+//        selectRect &= cv::Rect(0, 0, rgbimage.cols, rgbimage.rows);
+//    }
+//    if (event == CV_EVENT_LBUTTONDOWN)
+//    {
+//        bBeginKCF = false;
+//        select_flag = true;
+//        origin = cv::Point(x, y);
+//        selectRect = cv::Rect(x, y, 0, 0);
+//    }
+//    else if (event == CV_EVENT_LBUTTONUP)
+//    {
+//        select_flag = false;
+//        bRenewROI = true;
+//    }
+//}
+
+//void onMouse(int evt, int x, int y, int flags, void* param) {
+//    cout<<"~"<<endl;
+//    if(evt == CV_EVENT_LBUTTONDOWN) {
+//        std::vector<cv::Point>* ptPtr = (std::vector<cv::Point>*)param;
+//        ptPtr->push_back(cv::Point(x,y));
 //    }
 //}
 
@@ -192,113 +157,115 @@ int main(int argc, char** argv)
     vector<cv::String> fn;
     vector<cv::Mat> data;
     cv::glob(path + "/*.png",fn,true); // recurse
-//    Status rc = STATUS_OK;
-//
-//    // 初始化OpenNI环境
-//    OpenNI::initialize();
-//
-//    showdevice();
-//
-//    // 声明并打开Device设备。
-//    Device xtion;
-//    const char * deviceURL = openni::ANY_DEVICE;  //设备名
-//    rc = xtion.open(deviceURL);
-//
-//    // 创建深度数据流
-//    VideoStream streamDepth;
-//    rc = streamDepth.create(xtion, SENSOR_DEPTH);
-//    if (rc == STATUS_OK)
+    // 创建OpenCV图像窗口
+    namedWindow(RGB_WINDOW, CV_WINDOW_AUTOSIZE);
+    namedWindow(DEPTH_WINDOW, CV_WINDOW_AUTOSIZE);
+
+    // select ROI
+    // load bounding box
+    string bbox_path = file_path + "/init.txt";
+    ifstream file(bbox_path);
+    string str;
+    getline(file, str);
+//    cout << str << endl;
+
+    std::vector<int> vect;
+    std::stringstream ss(str);
+    int i;
+    while (ss >> i)
+    {
+        vect.push_back(i);
+
+        if (ss.peek() == ',')
+            ss.ignore();
+    }
+
+//    for (i=0; i< vect.size(); i++)
+//        std::cout << vect.at(i)<<std::endl;
+
+    // setting bounding box
+    selectRect.x = vect.at(0);
+    selectRect.y = vect.at(1);
+    selectRect.width = vect.at(2);
+    selectRect.height = vect.at(3);
+
+    // initialize the tracker
+    // read color image
+    string color_image_path = color_path + "/1.png";
+    rgbimage = imread(color_image_path, CV_LOAD_IMAGE_COLOR);   // Read the file
+    // read depth image
+    string depth_image_path = depth_path + "/1.png";
+    depthimage = imread(depth_image_path, CV_LOAD_IMAGE_UNCHANGED);
+    resize(rgbimage, rgbimage, Size(640, 480));
+//    double min, max;
+//    cv::Point min_loc, max_loc;
+//    cv::minMaxLoc(depthimage, &min, &max, &min_loc, &max_loc);
+//    cout << min_loc.x << "\t" << min_loc.y << endl;
+//    cout << max_loc.x << "\t" << max_loc.y << endl;
+//    cout << min << '\t' << max << endl;
+//    float depth = depthimage.at<ushort>(597, 148);
+//    cout << depth << endl;
+//    depth = depthimage.at<ushort>(148, 597);
+//    cout << depth << endl;
+//    depth = depthimage.at<ushort>(max_loc);
+//    cout << depth << endl;
+//    cout << depthimage.at<float>(148, 597) << endl;
+//    float depth;
+//    for(int row = selectRect.x; row < selectRect.x + selectRect.width; row++)
 //    {
-//        // 设置深度图像视频模式
-//        VideoMode mModeDepth;
-//        // 分辨率大小
-//        mModeDepth.setResolution(640, 480);
-//        // 每秒30帧
-//        mModeDepth.setFps(30);
-//        // 像素格式
-//        mModeDepth.setPixelFormat(PIXEL_FORMAT_DEPTH_1_MM);
-//
-//        streamDepth.setVideoMode(mModeDepth);
-//
-//        // 打开深度数据流
-//        rc = streamDepth.start();
-//        if (rc != STATUS_OK)
+//        row = 146;
+//        for(int col = selectRect.y; col < selectRect.y + selectRect.height; col++)
 //        {
-//            cerr << "无法打开深度数据流：" << OpenNI::getExtendedError() << endl;
-//            streamDepth.destroy();
+//            if(depthimage.at<ushort>(row, col) > 0) {
+//                depth = depthimage.at<ushort>(row, col) / 1000.0;
+//                cout << depth << "\t";
+//            }
+//        }
+//        break;
+//        cout << endl;
+//    }
+//    imshow(RGB_WINDOW, rgbimage);
+//    imshow(DEPTH_WINDOW, depthimage);
+//    waitKey(0);
+    tracker.init(selectRect, rgbimage, depthimage);
+//    return -1;
+
+//    string color_image_path = color_path + "/1.png";
+//    rgbimage = imread(color_image_path, CV_LOAD_IMAGE_COLOR);
+//    imshow(RGB_WINDOW, rgbimage);
+//    vector<Point> points;
+//    cv::setMouseCallback("Output Window", onMouse, (void*)&points);
+//    cout << points.size() << endl;
+//
+//    while(1) {
+//        cv::imshow("Output Window", frame);
+//
+//        if (points.size() > 2) //we have 2 points
+//        {
+//            for (auto it = points.begin(); it != points.end(); ++it) {
+//
+//                cout << "X and Y coordinates are given below" << endl;
+//                cout << (*it).x << '\t' << (*it).y << endl;
+//            }
+//            break;
+//            //draw points
 //        }
 //    }
-//    else
-//    {
-//        cerr << "无法创建深度数据流：" << OpenNI::getExtendedError() << endl;
-//    }
-//
-//    // 创建彩色图像数据流
-//    VideoStream streamColor;
-//    rc = streamColor.create(xtion, SENSOR_COLOR);
-//    if (rc == STATUS_OK)
-//    {
-//        // 同样的设置彩色图像视频模式
-//        VideoMode mModeColor;
-//        mModeColor.setResolution(320, 240);
-//        mModeColor.setFps(30);
-//        mModeColor.setPixelFormat(PIXEL_FORMAT_RGB888);
-//
-//        streamColor.setVideoMode(mModeColor);
-//
-//        // 打开彩色图像数据流
-//        rc = streamColor.start();
-//        if (rc != STATUS_OK)
-//        {
-//            cerr << "无法打开彩色图像数据流：" << OpenNI::getExtendedError() << endl;
-//            streamColor.destroy();
-//        }
-//    }
-//    else
-//    {
-//        cerr << "无法创建彩色图像数据流：" << OpenNI::getExtendedError() << endl;
-//    }
-//
-//    if (!streamColor.isValid() || !streamDepth.isValid())
-//    {
-//        cerr << "彩色或深度数据流不合法" << endl;
-//        OpenNI::shutdown();
-//        return 1;
-//    }
-//
-//    // 图像模式注册,彩色图与深度图对齐
-//    if (xtion.isImageRegistrationModeSupported(
-//        IMAGE_REGISTRATION_DEPTH_TO_COLOR))
-//    {
-//        xtion.setImageRegistrationMode(IMAGE_REGISTRATION_DEPTH_TO_COLOR);
-//    }
-//
-//
-//    // 创建OpenCV图像窗口
-//    namedWindow(RGB_WINDOW, CV_WINDOW_AUTOSIZE);
-//    //namedWindow(DEPTH_WINDOW, CV_WINDOW_AUTOSIZE);
-//
-//    // 获得最大深度值
-//    int iMaxDepth = streamDepth.getMaxPixelValue();
-//
-//    // 循环读取数据流信息并保存在VideoFrameRef中
-//    VideoFrameRef  frameDepth;
-//    VideoFrameRef  frameColor;
 
-    //openPort();
-
-//    while (true)
     Mat image;
-    ostringstream convert;
     for (size_t k=0; k<fn.size(); ++k)
     {
+        ostringstream convert;
         convert << k+1;
         // read color image
         string color_image_path = color_path + "/" + convert.str() + ".png";
         rgbimage = imread(color_image_path, CV_LOAD_IMAGE_COLOR);   // Read the file
         // read depth image
         string depth_image_path = depth_path + "/" + convert.str() + ".png";
-        depthimage = imread(depth_image_path, CV_LOAD_IMAGE_COLOR);
+        depthimage = imread(depth_image_path, CV_LOAD_IMAGE_GRAYSCALE);
+        resize(rgbimage, rgbimage, Size(640, 480));
+
+        cout << convert.str() << endl;
 
 //        // 读取数据流
 //        rc = streamDepth.readFrame(&frameDepth);
@@ -331,27 +298,31 @@ int main(int argc, char** argv)
 //            resize(rgbimage, rgbimage, Size(640, 480));
 //        }
 
-        setMouseCallback(RGB_WINDOW, onMouse, 0);
+//        setMouseCallback(RGB_WINDOW, onMouse, 0);
+//        selectRect = selectROI("Image", im, fromCenter);
 
-        if(bRenewROI)
-        {
-            if (selectRect.width <= 0 || selectRect.height <= 0)
-            {
-                bRenewROI = false;
-                continue;
-            }
-            tracker.init(selectRect, rgbimage, depthimage);
-            bBeginKCF = true;
-            bRenewROI = false;
-            enable_get_depth = false;
-        }
 
-        if(bBeginKCF)
+//        if(bRenewROI)
+//        {
+//            if (selectRect.width <= 0 || selectRect.height <= 0)
+//            {
+//                bRenewROI = false;
+//                continue;
+//            }
+//            tracker.init(selectRect, rgbimage, depthimage);
+//            bBeginKCF = true;
+//            bRenewROI = false;
+//            enable_get_depth = false;
+//        }
+
+        if(1)
         {
             
+//            cout << "1111111111111"<<endl;
             result = tracker.update(rgbimage, depthimage);
             cv::rectangle(rgbimage, result, cv::Scalar( 0, 255, 255 ), 2, 8 );
             enable_get_depth = true;
+//            cout << "22222222222222" << endl;
         }
         else
             cv::rectangle(rgbimage, selectRect, cv::Scalar(255, 0, 0), 2, 8, 0);
@@ -359,7 +330,7 @@ int main(int argc, char** argv)
         // 然后显示彩色图像
         imshow(RGB_WINDOW, rgbimage);
 
-        if(enable_get_depth)
+        if(1)
         {
             // dist_val[0] = depthimage.ptr<ushort>(result.y+result.height/3)[result.x+result.width/3];
             // dist_val[1] = depthimage.ptr<ushort>(result.y+result.height/3)[result.x+2*result.width/3];
@@ -404,13 +375,14 @@ int main(int argc, char** argv)
             else 
                 rotation_speed = 0;
 
-            // std::cout <<  "-----------------------------------------------------------------------"  << std::endl;
-            // std::cout <<  "linear_speed = " << linear_speed << "  rotation_speed = " << -rotation_speed << std::endl;
-            // std::cout <<  dist_val[0]  << " / " <<  dist_val[1] << " / " << dist_val[2] << " / " << dist_val[3] <<  " / " << dist_val[4] << std::endl;
-            // std::cout <<  "distance = " << distance << std::endl;
+            std::cout <<  "-----------------------------------------------------------------------"  << std::endl;
+            std::cout <<  "linear_speed = " << linear_speed << "  rotation_speed = " << -rotation_speed << std::endl;
+            std::cout <<  dist_val[0]  << " / " <<  dist_val[1] << " / " << dist_val[2] << " / " << dist_val[3] <<  " / " << dist_val[4] << std::endl;
+            std::cout <<  "distance = " << distance << std::endl;
         }
+//        break;
         // 显示出深度图像
-        //imshow(DEPTH_WINDOW, depthimage);
+        imshow(DEPTH_WINDOW, depthimage);
 
         //sendVelocity(linear_speed, -rotation_speed);
 

@@ -119,6 +119,8 @@ public:
     float curr_depth;
     bool occlusion;
 
+    float depth_max;
+
 protected:
     // Detect object in the current frame.
     cv::Point2f detect(cv::Mat z, cv::Mat x, float &peak_value);
