@@ -1,7 +1,24 @@
 cmake_minimum_required(VERSION 2.8)
-project(my)
 
-set(CMAKE_CXX_STANDARD 11)
+set(
+        CMAKE_RUNTIME_OUTPUT_DIRECTORY
+        ${CMAKE_HOME_DIRECTORY}/bin
+)
 
-set(SOURCE_FILES src/main.cpp)
-add_executable(my ${SOURCE_FILES})
+add_definitions(
+        -std=c++11
+)
+
+link_libraries(
+        -lopencv_contrib
+        -lopencv_core
+        -lopencv_highgui
+        -lopencv_imgproc
+        -lboost_system
+        -lboost_filesystem
+        -lboost_thread
+)
+
+FILE(GLOB_RECURSE sourcefiles "src/*.cpp")
+
+add_executable( main ${sourcefiles} )
