@@ -185,10 +185,7 @@ void KCFTracker::init(const cv::Rect &roi, cv::Mat rgbimage, cv::Mat depthimage)
     cout << "depth max : " << depth_max << endl;
 
     curr_depth = getDepth(_roi, depthimage);
-//    cout << "good here" << endl;
     t0_depth = curr_depth;
-//    cout << "good here" << endl;
-//    std::cout << " t0_depth " << curr_depth << std::endl;
  }
 
 // Update position based on the new frame
@@ -253,8 +250,7 @@ cv::Rect KCFTracker::update(cv::Mat image, cv::Mat depthimage)
                 _scale *= scale_depth;
                 _roi.width *= scale_depth;
                 _roi.height *= scale_depth;
-                //std::cout << " ------------------------scale_depth used : " << scale_depth << std::endl;
-            }
+                }
         }
 
         // // Test at a smaller _scale
@@ -617,17 +613,17 @@ float KCFTracker::getDepth(cv::Rect roi, cv::Mat depthimage)
     int count[result.size()];
 
     //calculate depth distribution
-    int row_degin; //= roi_y + roi.height / 3;
+    int row_begin; //= roi_y + roi.height / 3;
     int col_begin; //= roi_x + roi.width / 3;
     int row_end; //= roi_y + 2 * roi.height / 3;
     int col_end; //= roi_x + 2 * roi.width / 3;
 
     if(roi.y <= 0)
-        row_degin = 0;
+        row_begin = 0;
     else if(roi.y >= (depthimage.rows - 10))
         return 0;
     else 
-        row_degin = roi.y;
+        row_begin = roi.y;
 
     if(roi.y + roi.height <= 0)
         return 0;
@@ -650,31 +646,25 @@ float KCFTracker::getDepth(cv::Rect roi, cv::Mat depthimage)
     else 
         col_end = roi.x + roi.width;
 
-//     cout << "row_degin " << row_degin << endl;
+//     cout << "row_begin " << row_begin << endl;
 //     cout << "row_end " << row_end << endl;
 //     cout << "col_begin " << col_begin << endl;
 //     cout << "col_end " << col_end << endl;
 //     cout << "-------------------------------" << endl;
 
 
-    for(int row = row_degin; row < row_end; row++)
+    for(int row = row_begin; row < row_end; row++)
     {
         for(int col = col_begin; col < col_end; col++)
         {
             if(depthimage.at<ushort>(row, col) > 0)
             {
-//                cout << "good here" << endl;
                 float depth = depthimage.at<ushort>(row, col) / 1000.0;
-//                cout << "good here" << "\t" << depth << "\t" << depthimage.at<double>(row, col) << "\t" << depthimage.at<double>(row, col) / 1000 << endl;
-//                cout << depth << "\t" << depth_max << endl;
                 int inter = int(depth / interval);
-//                return -1;
-//                cout << inter << endl;
                 result.at(inter).push_back(depth);
             }
         }
     }
-//    cout << "good here" << endl;
 
 
     int maxSize = 0;

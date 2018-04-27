@@ -4,24 +4,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-//#include <iomanip>
-//#include <boost/asio.hpp>
-//#include <boost/bind.hpp>
-
-//#include <OpenNI.h>
-
 #include "kcftracker.hpp"
 
 
-//boost::asio::io_service iosev;
-//boost::asio::serial_port sp(iosev);
-
-//unsigned char startByte = 0xff;
-//unsigned char endByte = 0xfe;
-//std::string Base_Port = "/dev/ttyUSB0";
-
 using namespace std;
-//using namespace openni;
 using namespace cv;
 
 static const std::string RGB_WINDOW = "RGB Image window";
@@ -79,6 +65,8 @@ union Max_Value {
 } Send_Data;
 
 
+//TODO: user selected ROI. Either cv::roi or onMouse call back.
+
 //void onMouse(int event, int x, int y, int, void*)
 //{
 //    if (select_flag)
@@ -120,7 +108,7 @@ void hMirrorTrans(const Mat &src, Mat &dst)
 
     switch (src.channels())
     {
-    case 1:   //1通道比如深度图像
+    case 1:   // only 1 channel
         const uchar *origal;
         uchar *p;
         for (int i = 0; i < rows; i++){
@@ -131,7 +119,7 @@ void hMirrorTrans(const Mat &src, Mat &dst)
             }
         }
         break;
-    case 3:   //3通道比如彩色图像
+    case 3:   // color image
         const Vec3b *origal3;
         Vec3b *p3;
         for (int i = 0; i < rows; i++) {
@@ -157,7 +145,7 @@ int main(int argc, char** argv)
     vector<cv::String> fn;
     vector<cv::Mat> data;
     cv::glob(path + "/*.png",fn,true); // recurse
-    // 创建OpenCV图像窗口
+    // create opencv windows
     namedWindow(RGB_WINDOW, CV_WINDOW_AUTOSIZE);
     namedWindow(DEPTH_WINDOW, CV_WINDOW_AUTOSIZE);
 
@@ -167,7 +155,6 @@ int main(int argc, char** argv)
     ifstream file(bbox_path);
     string str;
     getline(file, str);
-//    cout << str << endl;
 
     std::vector<int> vect;
     std::stringstream ss(str);
@@ -180,8 +167,6 @@ int main(int argc, char** argv)
             ss.ignore();
     }
 
-//    for (i=0; i< vect.size(); i++)
-//        std::cout << vect.at(i)<<std::endl;
 
     // setting bounding box
     selectRect.x = vect.at(0);
@@ -197,60 +182,7 @@ int main(int argc, char** argv)
     string depth_image_path = depth_path + "/1.png";
     depthimage = imread(depth_image_path, CV_LOAD_IMAGE_UNCHANGED);
     resize(rgbimage, rgbimage, Size(640, 480));
-//    double min, max;
-//    cv::Point min_loc, max_loc;
-//    cv::minMaxLoc(depthimage, &min, &max, &min_loc, &max_loc);
-//    cout << min_loc.x << "\t" << min_loc.y << endl;
-//    cout << max_loc.x << "\t" << max_loc.y << endl;
-//    cout << min << '\t' << max << endl;
-//    float depth = depthimage.at<ushort>(597, 148);
-//    cout << depth << endl;
-//    depth = depthimage.at<ushort>(148, 597);
-//    cout << depth << endl;
-//    depth = depthimage.at<ushort>(max_loc);
-//    cout << depth << endl;
-//    cout << depthimage.at<float>(148, 597) << endl;
-//    float depth;
-//    for(int row = selectRect.x; row < selectRect.x + selectRect.width; row++)
-//    {
-//        row = 146;
-//        for(int col = selectRect.y; col < selectRect.y + selectRect.height; col++)
-//        {
-//            if(depthimage.at<ushort>(row, col) > 0) {
-//                depth = depthimage.at<ushort>(row, col) / 1000.0;
-//                cout << depth << "\t";
-//            }
-//        }
-//        break;
-//        cout << endl;
-//    }
-//    imshow(RGB_WINDOW, rgbimage);
-//    imshow(DEPTH_WINDOW, depthimage);
-//    waitKey(0);
     tracker.init(selectRect, rgbimage, depthimage);
-//    return -1;
-
-//    string color_image_path = color_path + "/1.png";
-//    rgbimage = imread(color_image_path, CV_LOAD_IMAGE_COLOR);
-//    imshow(RGB_WINDOW, rgbimage);
-//    vector<Point> points;
-//    cv::setMouseCallback("Output Window", onMouse, (void*)&points);
-//    cout << points.size() << endl;
-//
-//    while(1) {
-//        cv::imshow("Output Window", frame);
-//
-//        if (points.size() > 2) //we have 2 points
-//        {
-//            for (auto it = points.begin(); it != points.end(); ++it) {
-//
-//                cout << "X and Y coordinates are given below" << endl;
-//                cout << (*it).x << '\t' << (*it).y << endl;
-//            }
-//            break;
-//            //draw points
-//        }
-//    }
 
     Mat image;
     for (size_t k=0; k<fn.size(); ++k)
@@ -267,53 +199,6 @@ int main(int argc, char** argv)
 
         cout << convert.str() << endl;
 
-//        // 读取数据流
-//        rc = streamDepth.readFrame(&frameDepth);
-//        if (rc == STATUS_OK)
-//        {
-//            // 将深度数据转换成OpenCV格式
-//            const Mat mImageDepth(frameDepth.getHeight(), frameDepth.getWidth(), CV_16UC1, (void*)frameDepth.getData());
-//            // 为了让深度图像显示的更加明显一些，将CV_16UC1 ==> CV_8U格式
-//            //Mat mScaledDepth;//, hScaledDepth;
-//            //mImageDepth.convertTo(mScaledDepth, CV_8U, 255.0 / iMaxDepth);
-//            // cout << " 1 " << mImageDepth.ptr<ushort>(320)[240] << endl;
-//            // cout << " 2 " << mImageDepth.at<float>(320,240) << endl;
-//            //水平镜像深度图
-//            //hMirrorTrans(mScaledDepth, depthimage);
-//            //hMirrorTrans(mImageDepth, depthimage);
-//            mImageDepth.copyTo(depthimage);
-//        }
-//
-//        rc = streamColor.readFrame(&frameColor);
-//        if (rc == STATUS_OK)
-//        {
-//            // 同样的将彩色图像数据转化成OpenCV格式
-//            const Mat mImageRGB(frameColor.getHeight(), frameColor.getWidth(), CV_8UC3, (void*)frameColor.getData());
-//            // 首先将RGB格式转换为BGR格式
-//            // Mat cImageBGR,bImageBGR;//,hImageBGR;
-//            cvtColor(mImageRGB, rgbimage, CV_RGB2BGR);
-//
-//            //水平镜像深度图
-//            //hMirrorTrans(cImageBGR, rgbimage);
-//            resize(rgbimage, rgbimage, Size(640, 480));
-//        }
-
-//        setMouseCallback(RGB_WINDOW, onMouse, 0);
-//        selectRect = selectROI("Image", im, fromCenter);
-
-
-//        if(bRenewROI)
-//        {
-//            if (selectRect.width <= 0 || selectRect.height <= 0)
-//            {
-//                bRenewROI = false;
-//                continue;
-//            }
-//            tracker.init(selectRect, rgbimage, depthimage);
-//            bBeginKCF = true;
-//            bRenewROI = false;
-//            enable_get_depth = false;
-//        }
 
         if(1)
         {
@@ -327,7 +212,7 @@ int main(int argc, char** argv)
         else
             cv::rectangle(rgbimage, selectRect, cv::Scalar(255, 0, 0), 2, 8, 0);
 
-        // 然后显示彩色图像
+        // display the color image
         imshow(RGB_WINDOW, rgbimage);
 
         if(1)
@@ -381,12 +266,12 @@ int main(int argc, char** argv)
             std::cout <<  "distance = " << distance << std::endl;
         }
 //        break;
-        // 显示出深度图像
+        // display the depth image
         imshow(DEPTH_WINDOW, depthimage);
 
         //sendVelocity(linear_speed, -rotation_speed);
 
-        // 终止快捷键
+        // anykey to stop the program
         if (waitKey(30) >= 0)
         {
             //sendVelocity(0, 0);
@@ -394,13 +279,6 @@ int main(int argc, char** argv)
         }
     }
     destroyWindow(RGB_WINDOW);
-//    // 关闭数据流
-//    streamDepth.destroy();
-//    streamColor.destroy();
-//    // 关闭设备
-//    xtion.close();
-//    // 最后关闭OpenNI
-//    OpenNI::shutdown();
 
     return 0;
 }
