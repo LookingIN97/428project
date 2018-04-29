@@ -36,4 +36,4 @@ The structure of a dataset is assumed to be
 |   +-- n.png
 ```
 The dataset I use is Princeton Tracking Benchmark from http://tracking.cs.princeton.edu.
-The filenames are modified by temp.py to make it easier for further processing.
+The filenames are modified by temp.py (/helper) to make it easier for further processing.
