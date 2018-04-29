@@ -4,7 +4,7 @@ Author: Wenzhang Qian (wenzhang@ualberta.ca)
 ## Dependencies
 Opencv2 (2.4 was tested)
 
-## compile and run
+## Compile and run
 compile
 ```commandline
 mkdir build
@@ -20,6 +20,8 @@ cd bin
 ./main <path_to_dataset>
 ```
 
+
+## Dataset
 The structure of a dataset is assumed to be
 ```
 .
@@ -33,3 +35,5 @@ The structure of a dataset is assumed to be
 |   +-- 2.png
 |   +-- n.png
 ```
+The dataset I use is Princeton Tracking Benchmark from http://tracking.cs.princeton.edu.
+The filenames are modified by temp.py to make it easier for further processing.
