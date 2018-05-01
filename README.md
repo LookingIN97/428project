@@ -1,6 +1,9 @@
 # 428project
 Author: Wenzhang Qian (wenzhang@ualberta.ca)
 
+## Environment
+Ubuntu 14.04
+
 ## Dependencies
 Opencv2 (2.4 was tested)
 
